@@ -84,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-m",
         type=str,
-        default="seg",
+        default="fg_small",
         help="Model to load"
     )
 
