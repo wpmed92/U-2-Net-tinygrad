@@ -20,7 +20,7 @@ The large (176 mb) weights can be downloaded from the following links:
 ## Run inference
 
 ```sh
-python3 u2net_run.py -i /path/to/image -m selected_model
+python3 u2net_run.py -i /path/to/image_or_folder -m selected_model
 ```
 
 Where `selected_model` is one of:  

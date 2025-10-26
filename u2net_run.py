@@ -9,6 +9,7 @@ from model.u2net_tiny import U2NET, U2NETP
 import time
 import cv2
 import argparse
+from pathlib import Path
 
 def normPRED(d):
     ma, mi = d.max(), d.min()
@@ -26,6 +27,20 @@ def save_output(image_name,predict_np,d_dir):
         imidx = imidx + "." + bbb[i]
 
     imo.save(d_dir+'/'+imidx+'_out.jpg')
+
+def load_and_predict(file, model, net):
+    image = cv2.imread(file)
+    if model != "portrait":
+        image = cv2.resize(image, (320,320))
+
+    print(f"Running U^2 Net on device: {Device.DEFAULT} for file: {file}")
+    start = time.perf_counter()
+    pred = inference(net, image)
+    end = time.perf_counter()
+    elapsed_ms = (end - start) * 1000
+    print(f"Inference time: {elapsed_ms:.3f} ms")
+
+    save_output(file, pred, "./output")
 
 def inference(net, input):
     # normalize the input
@@ -63,7 +78,7 @@ if __name__ == "__main__":
         "-i",
         type=str,
         default="./example_data/test2.jpg",
-        help="Path to the input image"
+        help="Path to the input image or folder containing images"
     )
 
     parser.add_argument(
@@ -107,16 +122,11 @@ if __name__ == "__main__":
     for k, v in loaded.items():
       get_child(unet, k).assign(v.numpy()).realize()
 
-    image = cv2.imread(args.i)
+    os.makedirs("./output", exist_ok=True)
 
-    if args.m != "portrait":
-        image = cv2.resize(image, (320,320))
-
-    print(f"Running U^2 Net on device: {Device.DEFAULT}")
-    start = time.perf_counter()
-    pred = inference(unet if not args.j else jit_unet, image)
-    end = time.perf_counter()
-    elapsed_ms = (end - start) * 1000
-    print(f"Inference time: {elapsed_ms:.3f} ms")
-
-    save_output(args.i, pred, "./")
+    if Path(args.i).is_dir():
+        for file in os.listdir(args.i):
+            if "_out." in file: continue
+            load_and_predict(os.path.join(args.i, file), args.m, unet if not args.j else jit_unet)
+    else:
+        load_and_predict(args.i, args.m, unet if not args.j else jit_unet)
