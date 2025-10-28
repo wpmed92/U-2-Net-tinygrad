@@ -33,7 +33,10 @@ Where `selected_model` is one of:
 
 `portrait`: converts photo to pencil drawing (only large variant available, 176 mb)
   
-Perform sky replacement
+## Perform sky replacement
+
+By providing one photo that contains a visible sky and another photo showing only a sky, you can replace the sky in the original photo with the new one:  
+
 
 ```sh
 python3 u2net_run.py -i /path/to/image_with_sky -m sky_small -sky /path/to/new_sky
