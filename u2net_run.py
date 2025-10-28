@@ -1,4 +1,4 @@
-from tinygrad import Tensor, nn, TinyJit
+from tinygrad import Tensor, nn, TinyJit, dtypes
 from tinygrad.device import Device
 from tinygrad.helpers import get_child
 import numpy as np
@@ -41,6 +41,7 @@ def load_and_predict(file, model, net):
     print(f"Inference time: {elapsed_ms:.3f} ms")
 
     save_output(file, pred, "./output")
+    return pred
 
 def inference(net, input):
     # normalize the input
@@ -71,6 +72,22 @@ def inference(net, input):
 
     return pred
 
+def sky_replacement(photo_np: np.array, sky_np: np.array, mask_np: np.array):
+    photo_tensor = Tensor(photo_np)
+    sky_tensor = Tensor(sky_np)
+    mask_tensor = Tensor(mask_np)
+    mask_tensor = mask_tensor.unsqueeze(-1).repeat(1,1,3).interpolate(photo_tensor.shape)
+    sky_tensor = sky_tensor.interpolate(photo_tensor.shape)
+    masked_out_sky = (mask_tensor*photo_tensor).cast(dtypes.uchar)
+    new_sky = ((1.0-mask_tensor)*sky_tensor).cast(dtypes.uchar)
+    dominant_color_rgb = (sky_tensor/255.0).mean(axis=(0,1))
+    r,g,b= masked_out_sky[:,:,0], masked_out_sky[:,:,1], masked_out_sky[:,:,2]
+    r_m, g_m, b_m = dominant_color_rgb
+    blended = (((r/255.0)*r_m).stack((g/255.0)*g_m, (b/255.0)*b_m, dim=2)*255).cast(dtypes.uchar)
+    new_composite = blended + new_sky
+
+    return new_composite
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="U^2 Net on tinygrad")
 
@@ -93,6 +110,12 @@ if __name__ == "__main__":
         type=bool,
         default=True,
         help="Whether to use jit"
+    )
+
+    parser.add_argument(
+        "-sky",
+        type=str,
+        help="Path to the image of the new sky"
     )
 
     args = parser.parse_args()
@@ -124,7 +147,18 @@ if __name__ == "__main__":
 
     os.makedirs("./output", exist_ok=True)
 
-    if Path(args.i).is_dir():
+    if args.sky:
+        input_path = Path(args.i)
+        assert Path(args.sky).exists(), "The provided sky image path does not exist"
+        assert Path(args.sky).is_file(), "Sky replacement only works on single image"
+        assert args.m == "sky_small", "For sky replacement use sky_small model"
+        sky_np = io.imread(args.sky)
+        photo_np = io.imread(args.i)
+        pred_np = load_and_predict(args.i, args.m, unet if not args.j else jit_unet)
+        new_sky_out = sky_replacement(photo_np, sky_np, pred_np)
+        output_path =f"./{input_path.stem}_new_sky{input_path.suffix}"
+        io.imsave(output_path, new_sky_out.numpy())
+    elif Path(args.i).is_dir():
         for file in os.listdir(args.i):
             if "_out." in file: continue
             load_and_predict(os.path.join(args.i, file), args.m, unet if not args.j else jit_unet)
