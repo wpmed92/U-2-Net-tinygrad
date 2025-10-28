@@ -32,8 +32,8 @@ Where `selected_model` is one of:
 `sky_small`: sky segmentation (small variant, 4.7 mb)  
 
 `portrait`: converts photo to pencil drawing (only large variant available, 176 mb)
-
-## Sky replacement
+  
+Perform sky replacement
 
 ```sh
 python3 u2net_run.py -i /path/to/image_with_sky -m sky_small -sky /path/to/new_sky
