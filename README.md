@@ -33,6 +33,12 @@ Where `selected_model` is one of:
 
 `portrait`: converts photo to pencil drawing (only large variant available, 176 mb)
 
+## Sky replacement
+
+```sh
+python3 u2net_run.py -i /path/to/image_with_sky -m sky_small -sky /path/to/new_sky
+```
+
 ## Examples
 
 Foreground segmentation
@@ -43,6 +49,13 @@ Sky segmentation
 
 ![sky example image](./example_data/test_sky.jpg)
 ![sky example mask](./example_data/test_sky_out.jpg)
+
+Sky replacement
+
+![sky example image](./example_data/new_sky.jpg)
+![sky example image](./example_data/test_sky.jpg)
+![sky example image](./example_data/test_sky_new_sky.jpg)
+
 
 ## License
 
